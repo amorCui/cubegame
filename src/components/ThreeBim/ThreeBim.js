@@ -14,6 +14,7 @@ class ThreeBim extends React.Component {
             camera: null,
             scene: null,
             light: null,
+            user: null,
             minMapCamera: null,
             keyEventListener: true
         };
@@ -23,8 +24,9 @@ class ThreeBim extends React.Component {
     init(options) {
         var width = window.innerWidth;
         var height = window.innerHeight;
+        var renderer;
         if(this.state.renderer === null){
-            var renderer = new THREE.WebGLRenderer({
+            renderer = new THREE.WebGLRenderer({
                 antialias: true
             });
             
@@ -38,7 +40,7 @@ class ThreeBim extends React.Component {
             document.getElementById('canvas-frame').appendChild(this.state.renderer.domElement);
             
         }else{
-            var renderer = this.state.renderer;
+            renderer = this.state.renderer;
             renderer.setSize(width, height);
             this.setState((state) => ({
                 width: width,
@@ -75,11 +77,44 @@ class ThreeBim extends React.Component {
        
     }
 
+    initUser(options){
+        var objOptions = options.objOptions;
+        var geometry = new THREE.CubeGeometry(objOptions.objSize.lenght, objOptions.objSize.width, objOptions.objSize.height);
+        
+        var mats = [];
+        mats.push(new THREE.MeshPhongMaterial({color: 0x00ff00}));
+        mats.push(new THREE.MeshPhongMaterial({color: 0xff0000}));
+
+        // var material = new THREE.MeshPhongMaterial({
+        //     color: 0xff00000
+        // });
+
+        // var user = new THREE.Mesh(geometry, material);
+        var user = new THREE.Mesh(geometry, mats);
+
+        for (let j = 0; j < geometry.faces.length; j++) {
+            if (j === 8 || j === 9) {
+                geometry.faces[j].materialIndex = 1;
+            } else {
+                geometry.faces[j].materialIndex = 0;
+            }
+        }
+
+        this.state.scene.add(user);
+
+        this.setState({
+            user: user
+        });
+
+    }
 
     initCamera(options) {
+        var cameraOption = options.cameraOptions.camera;
         var camera = new THREE.PerspectiveCamera(45, this.state.width / this.state.height, 1, 10000);
-        camera.position.set(0, 20, 0);
-        camera.up.set(0, 1, 0);//正视
+        camera.position.set(cameraOption.position[0], cameraOption.position[1], cameraOption.position[2]);
+        // camera.position.set(0, 20, 40);
+        // camera.up.set(0, 1, 0);//正视
+        camera.lookAt(0,0,0);
 
         this.setState((state) => ({
             camera: camera
@@ -174,14 +209,34 @@ class ThreeBim extends React.Component {
         }));
     }
 
-    initHelper() {
+    initHelper(options) {
         let axesHelper = new THREE.AxesHelper(10);
         let cameraHelper = new THREE.CameraHelper(this.state.camera);
+
+        let gridHelper = new THREE.GridHelper(1000,100,0x444444, 0x888888);
+        gridHelper.material.opacity = 0.1;
+        gridHelper.material.transparent = true;
+
         // let lightHelper = new THREE.DirectionalLightHelper(0xffffff);
         var scene = this.state.scene;
         scene.add(axesHelper);
         scene.add(cameraHelper);
         // this.scene.add(lightHelper);
+        scene.add(gridHelper);
+
+        var user = this.state.user;
+    
+        // 3. BoundingBoxHelper
+        var bboxHelper = new THREE.BoundingBoxHelper(user, 0x999999);
+        scene.add(bboxHelper);
+        
+        // var userDirec = user.getWorldDirection(new THREE.Vector3());
+        var arrowFrontHelper = new THREE.ArrowHelper(user.getWorldDirection(), user.position, options.objOptions.objSize.lenght * 3, 0xFF0000);
+        var arrowBackHelper = new THREE.ArrowHelper(user.getWorldDirection().negate(), user.position, options.objOptions.objSize.lenght * 3, 0x00FF00);
+        // arrowFrontHelper.updateProjectionMatrix();
+        // arrowBackHelper.updateProjectionMatrix();
+        scene.add(arrowFrontHelper);
+        scene.add(arrowBackHelper);
 
         this.setState({
             scene: scene
@@ -249,11 +304,14 @@ class ThreeBim extends React.Component {
                 that.initCamera(data);
                 that.initScene();
                 that.initLight(data);
+
+                that.initUser(data);
+
                 that.initObject(data.objOptions);
 
                 that.initMinMap();
 
-                that.initHelper();
+                that.initHelper(data);
 
                 that.animation();
             });
@@ -265,10 +323,96 @@ class ThreeBim extends React.Component {
     go(){
         var camera = this.state.camera;
         var minMapCamera = this.state.minMapCamera;
+        var user = this.state.user;
+        var scene = this.state.scene;
         var cubeSize = this.state.options.objOptions.objSize;
-        camera.position.z = camera.position.z - cubeSize.width;
-        minMapCamera.position.z = minMapCamera.position.z - cubeSize.width;
+
+        // camera.translateZ (- cubeSize.width);
+        // minMapCamera.translateZ (- cubeSize.width);
+        // minMapCamera.lookAt(user.position);
+
+        user.translateZ (- cubeSize.width);
+
         this.setState({
+            user:user,
+            camera: camera,
+            minMapCamera: minMapCamera,
+            scene:scene
+        });
+    }
+
+    /**
+     * 左转
+     */
+    turnLeft(){
+        var camera = this.state.camera;
+        var minMapCamera = this.state.minMapCamera;
+        var user = this.state.user;
+        var scene = this.state.scene;
+
+        user.rotateOnWorldAxis(
+            new THREE.Vector3(0, 1, 0),
+            Math.PI / 2
+        );
+
+        user.rotateOnAxis(
+            new THREE.Vector3(0, 1, 0),
+            -Math.PI / 2
+        );
+
+        // user.rotateY(Math.PI / 2);
+        // camera.rotateY(Math.PI / 2);
+        // minMapCamera.rotateY(Math.PI / 2);
+        
+
+        this.setState({
+            user:user,
+            camera: camera,
+            minMapCamera: minMapCamera,
+            scene:scene
+        });
+    }
+
+    /**
+     * 右转 
+     */
+    turnRight(){
+        var camera = this.state.camera;
+        var minMapCamera = this.state.minMapCamera;
+        var user = this.state.user;
+        var scene = this.state.scene;
+
+        user.rotateOnAxis(
+            new THREE.Vector3(0, 1, 0),
+            Math.PI / 2
+        );
+
+        this.setState({
+            user:user,
+            camera: camera,
+            minMapCamera: minMapCamera,
+            scene:scene
+        });
+    }
+
+    /**
+     * 后退
+     */
+    back(){
+        var camera = this.state.camera;
+        var minMapCamera = this.state.minMapCamera;
+        var user = this.state.user;
+        var cubeSize = this.state.options.objOptions.objSize;
+
+        // camera.translateZ(cubeSize.width);
+        // minMapCamera.translateZ(cubeSize.width);
+        // minMapCamera.lookAt(user.position);
+
+        
+        user.translateZ (cubeSize.width);
+
+        this.setState({
+            user:user,
             camera: camera,
             minMapCamera: minMapCamera
         });
@@ -296,13 +440,16 @@ class ThreeBim extends React.Component {
                         this.go();
                         break;
                     case "ArrowLeft":
+                        this.turnLeft();
                         break;
                     case "ArrowDown":
+                        this.back();
                         break;
                     case "ArrowRight":
+                        this.turnRight();
                         break;
                     default:
-                        console.log('case default');
+                        break;
                 }
                 this.setState({
                     keyEventListener: true
