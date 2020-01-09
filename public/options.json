@@ -1,9 +1,9 @@
 {
     "objOptions":{
         "objSize": {
-            "lenght": 20,
-            "width": 20,
-            "height": 20
+            "lenght": 10,
+            "width": 10,
+            "height": 10
         },
         "wall": {
             "length": 40,
@@ -17,7 +17,7 @@
     },
     "cameraOptions":{
         "camera":{
-
+            "position": [10, 80, 60]
         },
         "minMapCamera":{
             "left": -8,
