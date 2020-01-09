@@ -201,7 +201,7 @@ class ThreeBim extends React.Component {
         minMapCamera.position.x = 0;
         minMapCamera.position.z = 0;
         minMapCamera.position.y = 1000;
-        // minMapCamera.up.set(0, 0, 1);
+        minMapCamera.up.set(1, 0, 0);
         minMapCamera.lookAt(0,0,0);
 
         this.setState((state) => ({
@@ -357,7 +357,7 @@ class ThreeBim extends React.Component {
 
         user.rotateOnAxis(
             new THREE.Vector3(0, 1, 0),
-            -Math.PI / 2
+            Math.PI / 2
         );
 
         // user.rotateY(Math.PI / 2);
@@ -384,7 +384,7 @@ class ThreeBim extends React.Component {
 
         user.rotateOnAxis(
             new THREE.Vector3(0, 1, 0),
-            Math.PI / 2
+            -Math.PI / 2
         );
 
         this.setState({
